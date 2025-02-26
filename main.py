@@ -19,7 +19,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 
 
-def login_x(target_date, desired_times):
+def login_x(target_date, desired_times, retry_interval):
     """
     Try to book fitness slots at the specified times on the target date.
 
@@ -41,6 +41,11 @@ def login_x(target_date, desired_times):
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--remote-debugging-port=9222")
+    # Add headless mode options
+    chrome_options.add_argument("--headless=new")  # new headless mode for Chrome v109+
+    chrome_options.add_argument("--window-size=1920,1080")  # Set a standard resolution
+    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--disable-gpu")  # Recommended for headless
 
     # Initialize the webdriver with webdriver-manager
     driver = webdriver.Chrome(
@@ -228,7 +233,7 @@ def login_x(target_date, desired_times):
                     print(f"No available slots for {desired_time}")
 
             print(
-                "No slots available at any of the desired times. Trying again in 5 minutes...")
+                f"No slots available at any of the desired times. Trying again in {retry_interval} minutes...")
             raise NoAvailableSlotsError(
                 "No slots available at any of the desired times")
 
@@ -255,19 +260,32 @@ class BookingGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Fitness Slot Booking")
-        # Made wider to accommodate priority controls
         self.root.geometry("500x700")
 
         # Date Selection
         self.cal = Calendar(self.root,
-                            mindate=datetime.now(),
-                            maxdate=datetime.now().replace(month=datetime.now().month + 3),
-                            date_pattern='y-mm-dd')
+                          mindate=datetime.now(),
+                          maxdate=datetime.now().replace(month=datetime.now().month + 3),
+                          date_pattern='y-mm-dd')
         self.cal.pack(pady=20)
 
+        # Add retry interval control
+        retry_frame = ttk.LabelFrame(self.root, text="Retry Settings")
+        retry_frame.pack(pady=10, padx=10, fill="x")
+
+        ttk.Label(retry_frame, text="Retry Interval (minutes):").pack(side=tk.LEFT, padx=5)
+        
+        # Default retry interval is 5 minutes
+        self.retry_interval = tk.StringVar(value="5")
+        
+        # Entry widget for retry interval with validation
+        vcmd = (self.root.register(self.validate_interval), '%P')
+        retry_entry = ttk.Entry(retry_frame, textvariable=self.retry_interval, 
+                              width=5, validate='key', validatecommand=vcmd)
+        retry_entry.pack(side=tk.LEFT, padx=5)
+
         # Time Selection
-        time_frame = ttk.LabelFrame(
-            self.root, text="Select Times")
+        time_frame = ttk.LabelFrame(self.root, text="Select Times")
         time_frame.pack(pady=20, padx=10, fill="x")
 
         # Available times with priority
@@ -367,15 +385,25 @@ class BookingGUI:
                                                           1] = self.selected_times[idx+1], self.selected_times[idx]
             self.update_selected_times()
 
+    def validate_interval(self, P):
+        """Validate the retry interval input"""
+        if P == "":
+            return True
+        try:
+            value = int(P)
+            return value > 0
+        except ValueError:
+            return False
+
     def start_booking(self):
         selected_date = self.cal.get_date()
 
         if not self.selected_times:
-            self.status_label.config(
-                text="Please select at least one time slot")
+            self.status_label.config(text="Please select at least one time slot")
             return
 
         self.status_label.config(text="Starting booking process...")
+        
         self.book_button.state(['disabled'])
 
         # Create date object (time will be ignored)
@@ -383,15 +411,24 @@ class BookingGUI:
 
         # Start the booking process with prioritized times
         try:
-            if login_x(target_date, self.selected_times):
+            if login_x(target_date, self.selected_times, self.retry_interval.get()):
                 self.status_label.config(text="Booking completed!")
                 self.book_button.state(['!disabled'])
             else:
-                self.status_label.config(text="No available slots, retrying in 5 minutes...")
-                # Schedule retry using after() instead of sleep()
+                # Get retry interval in minutes
+                try:
+                    interval = int(self.retry_interval.get())
+                except ValueError:
+                    interval = 5  # Default to 5 minutes if invalid input
+
+                self.status_label.config(
+                    text=f"No available slots, retrying in {interval} minutes...")
+                
+                # Schedule retry using after() with the custom interval
                 if self.retry_timer:
                     self.root.after_cancel(self.retry_timer)
-                self.retry_timer = self.root.after(300000, lambda: self.start_booking())
+                self.retry_timer = self.root.after(interval * 60 * 1000, 
+                                                 lambda: self.start_booking())
         except Exception as e:
             self.status_label.config(text=f"Error: {str(e)}")
             self.book_button.state(['!disabled'])
