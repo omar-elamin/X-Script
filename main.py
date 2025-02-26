@@ -424,10 +424,13 @@ class BookingGUI:
                 self.status_label.config(
                     text=f"No available slots, retrying in {interval} minutes...")
                 
+                interval = interval * 60 * 1000
+                interval = np.random.normal(interval, 0.1*interval)
+
                 # Schedule retry using after() with the custom interval
                 if self.retry_timer:
                     self.root.after_cancel(self.retry_timer)
-                self.retry_timer = self.root.after(interval * 60 * 1000, 
+                self.retry_timer = self.root.after(interval, 
                                                  lambda: self.start_booking())
         except Exception as e:
             self.status_label.config(text=f"Error: {str(e)}")
