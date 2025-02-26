@@ -425,7 +425,7 @@ class BookingGUI:
                     text=f"No available slots, retrying in {interval} minutes...")
                 
                 interval = interval * 60 * 1000
-                interval = np.random.normal(interval, 0.1*interval)
+                interval = int(np.random.normal(interval, 0.1*interval))
 
                 # Schedule retry using after() with the custom interval
                 if self.retry_timer:
