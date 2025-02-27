@@ -17,6 +17,8 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
+import argparse
+import sys
 
 
 def login_x(target_date, desired_times, retry_interval):
@@ -233,7 +235,7 @@ def login_x(target_date, desired_times, retry_interval):
                     print(f"No available slots for {desired_time}")
 
             print(
-                f"No slots available at any of the desired times. Trying again in {retry_interval} minutes...")
+                f"No slots available at any of the desired times. Trying again in {retry_interval} seconds...")
             raise NoAvailableSlotsError(
                 "No slots available at any of the desired times")
 
@@ -273,10 +275,10 @@ class BookingGUI:
         retry_frame = ttk.LabelFrame(self.root, text="Retry Settings")
         retry_frame.pack(pady=10, padx=10, fill="x")
 
-        ttk.Label(retry_frame, text="Retry Interval (minutes):").pack(side=tk.LEFT, padx=5)
+        ttk.Label(retry_frame, text="Retry Interval (seconds):").pack(side=tk.LEFT, padx=5)
         
-        # Default retry interval is 5 minutes
-        self.retry_interval = tk.StringVar(value="5")
+        # Default retry interval is 300 seconds (5 minutes)
+        self.retry_interval = tk.StringVar(value="300")
         
         # Entry widget for retry interval with validation
         vcmd = (self.root.register(self.validate_interval), '%P')
@@ -415,17 +417,16 @@ class BookingGUI:
                 self.status_label.config(text="Booking completed!")
                 self.book_button.state(['!disabled'])
             else:
-                # Get retry interval in minutes
+                # Get retry interval in seconds
                 try:
                     interval = int(self.retry_interval.get())
                 except ValueError:
-                    interval = 5  # Default to 5 minutes if invalid input
+                    interval = 300  # Default to 300 seconds (5 minutes) if invalid input
 
                 self.status_label.config(
-                    text=f"No available slots, retrying in {interval} minutes...")
+                    text=f"No available slots, retrying in {interval} seconds...")
                 
-                interval = interval * 60 * 1000
-                interval = int(np.random.normal(interval, 0.1*interval))
+                interval = interval * 1000  # Convert seconds to milliseconds
 
                 # Schedule retry using after() with the custom interval
                 if self.retry_timer:
@@ -447,6 +448,34 @@ class BookingGUI:
         self.root.mainloop()
 
 
+def main():
+    parser = argparse.ArgumentParser(description='Book fitness slots')
+    parser.add_argument('--date', type=str, required=True, help='Date in YYYY-MM-DD format')
+    parser.add_argument('--times', type=str, required=True, help='Comma-separated list of times')
+    parser.add_argument('--interval', type=int, required=True, help='Retry interval in seconds')
+    
+    args = parser.parse_args()
+    
+    # Parse date
+    target_date = datetime.strptime(args.date, '%Y-%m-%d')
+    
+    # Parse times
+    desired_times = args.times.split(',')
+    
+    # Run in headless mode
+    return login_x(target_date, desired_times, args.interval)
+
+
 if __name__ == '__main__':
-    app = BookingGUI()
-    app.run()
+    # Check if running with arguments
+    if len(sys.argv) > 1:
+        success = main()
+        if success:
+            print("Successfully booked")
+            sys.exit(0)
+        else:
+            print("No available slots")
+            sys.exit(1)
+    else:
+        app = BookingGUI()
+        app.run()
