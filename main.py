@@ -44,8 +44,10 @@ def login_x(target_date, desired_times, retry_interval):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--remote-debugging-port=9222")
     # Add headless mode options
-    chrome_options.add_argument("--headless=new")  # new headless mode for Chrome v109+
-    chrome_options.add_argument("--window-size=1920,1080")  # Set a standard resolution
+    # new headless mode for Chrome v109+
+    chrome_options.add_argument("--headless=new")
+    # Set a standard resolution
+    chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--start-maximized")
     chrome_options.add_argument("--disable-gpu")  # Recommended for headless
 
@@ -266,24 +268,25 @@ class BookingGUI:
 
         # Date Selection
         self.cal = Calendar(self.root,
-                          mindate=datetime.now(),
-                          maxdate=datetime.now().replace(month=datetime.now().month + 3),
-                          date_pattern='y-mm-dd')
+                            mindate=datetime.now(),
+                            maxdate=datetime.now().replace(month=datetime.now().month + 3),
+                            date_pattern='y-mm-dd')
         self.cal.pack(pady=20)
 
         # Add retry interval control
         retry_frame = ttk.LabelFrame(self.root, text="Retry Settings")
         retry_frame.pack(pady=10, padx=10, fill="x")
 
-        ttk.Label(retry_frame, text="Retry Interval (seconds):").pack(side=tk.LEFT, padx=5)
-        
+        ttk.Label(retry_frame, text="Retry Interval (seconds):").pack(
+            side=tk.LEFT, padx=5)
+
         # Default retry interval is 300 seconds (5 minutes)
         self.retry_interval = tk.StringVar(value="300")
-        
+
         # Entry widget for retry interval with validation
         vcmd = (self.root.register(self.validate_interval), '%P')
-        retry_entry = ttk.Entry(retry_frame, textvariable=self.retry_interval, 
-                              width=5, validate='key', validatecommand=vcmd)
+        retry_entry = ttk.Entry(retry_frame, textvariable=self.retry_interval,
+                                width=5, validate='key', validatecommand=vcmd)
         retry_entry.pack(side=tk.LEFT, padx=5)
 
         # Time Selection
@@ -326,12 +329,12 @@ class BookingGUI:
 
         # Book Button
         self.book_button = ttk.Button(button_frame, text="Book Selected Slots",
-                                    command=self.start_booking)
+                                      command=self.start_booking)
         self.book_button.pack(side=tk.LEFT, padx=5)
 
         # Stop Button
         self.stop_button = ttk.Button(button_frame, text="Stop Retrying",
-                                    command=self.stop_booking)
+                                      command=self.stop_booking)
         self.stop_button.pack(side=tk.LEFT, padx=5)
 
         # Status Label
@@ -401,11 +404,12 @@ class BookingGUI:
         selected_date = self.cal.get_date()
 
         if not self.selected_times:
-            self.status_label.config(text="Please select at least one time slot")
+            self.status_label.config(
+                text="Please select at least one time slot")
             return
 
         self.status_label.config(text="Starting booking process...")
-        
+
         self.book_button.state(['disabled'])
 
         # Create date object (time will be ignored)
@@ -421,18 +425,19 @@ class BookingGUI:
                 try:
                     interval = int(self.retry_interval.get())
                 except ValueError:
-                    interval = 300  # Default to 300 seconds (5 minutes) if invalid input
+                    # Default to 300 seconds (5 minutes) if invalid input
+                    interval = 300
 
                 self.status_label.config(
                     text=f"No available slots, retrying in {interval} seconds...")
-                
+
                 interval = interval * 1000  # Convert seconds to milliseconds
 
                 # Schedule retry using after() with the custom interval
                 if self.retry_timer:
                     self.root.after_cancel(self.retry_timer)
-                self.retry_timer = self.root.after(interval, 
-                                                 lambda: self.start_booking())
+                self.retry_timer = self.root.after(interval,
+                                                   lambda: self.start_booking())
         except Exception as e:
             self.status_label.config(text=f"Error: {str(e)}")
             self.book_button.state(['!disabled'])
@@ -450,18 +455,21 @@ class BookingGUI:
 
 def main():
     parser = argparse.ArgumentParser(description='Book fitness slots')
-    parser.add_argument('--date', type=str, required=True, help='Date in YYYY-MM-DD format')
-    parser.add_argument('--times', type=str, required=True, help='Comma-separated list of times')
-    parser.add_argument('--interval', type=int, required=True, help='Retry interval in seconds')
-    
+    parser.add_argument('--date', type=str, required=True,
+                        help='Date in YYYY-MM-DD format')
+    parser.add_argument('--times', type=str, required=True,
+                        help='Comma-separated list of times')
+    parser.add_argument('--interval', type=int, required=True,
+                        help='Retry interval in seconds')
+
     args = parser.parse_args()
-    
+
     # Parse date
     target_date = datetime.strptime(args.date, '%Y-%m-%d')
-    
+
     # Parse times
     desired_times = args.times.split(',')
-    
+
     # Run in headless mode
     return login_x(target_date, desired_times, args.interval)
 
@@ -469,7 +477,11 @@ def main():
 if __name__ == '__main__':
     # Check if running with arguments
     if len(sys.argv) > 1:
-        success = main()
+        try:
+            success = main()
+        except Exception as e:
+            print(f"Failed to book: {str(e)}")
+            sys.exit(1)
         if success:
             print("Successfully booked")
             sys.exit(0)
