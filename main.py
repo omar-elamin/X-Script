@@ -225,10 +225,25 @@ def login_x(target_date, desired_times, retry_interval):
                         confirm_button.click()
                         print("Clicked confirm button")
 
-                        print(
-                            f"Successfully booked a slot for {desired_time}!")
-                        driver.quit()
-                        return True
+                        # Wait for and verify the booking success message
+                        try:
+                            success_element = wait.until(
+                                EC.visibility_of_element_located((By.XPATH, "//div[@data-test-id='booking-success']"))
+                            )
+                            success_text = success_element.text
+                            if "Booking was made" in success_text:
+                                print(f"Successfully booked a slot for {desired_time}!")
+                                driver.quit()
+                                return True
+                            else:
+                                print(f"Booking failed: Success message not found or incorrect. Message: {success_text}")
+                                continue
+                        except TimeoutException:
+                            print("Booking failed: Success message not found within timeout period")
+                            continue
+                        except Exception as e:
+                            print(f"Booking verification failed: {str(e)}")
+                            continue
 
                     except Exception as e:
                         print(f"Error booking {desired_time}: {str(e)}")
