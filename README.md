@@ -57,19 +57,26 @@ npm install
 
 ### Quick Start with Run Scripts
 
-We provide convenient run scripts that automatically activate the conda environment and start the application:
+We provide convenient run scripts that automatically set up everything you need to run the application:
 
 #### For Windows:
 ```
 .\run.bat
 ```
 
-#### For Unix-based systems (Linux/macOS):
+#### For macOS:
 ```
 ./run.sh
 ```
 
-By default, these scripts activate the "xscript" conda environment. If you used a different name for your environment, you can specify it as a parameter:
+These scripts will:
+- Check if the conda environment exists, and create it if it doesn't
+- Activate the conda environment
+- Install Python dependencies if needed
+- Install npm dependencies if needed
+- Start the application
+
+By default, these scripts use the "xscript" conda environment. If you want to use a different environment name, you can specify it as a parameter:
 
 ```
 .\run.bat your-env-name
@@ -106,7 +113,7 @@ npm run dev
 # Windows
 .\run.bat
 
-# Unix-based systems
+# macOS
 ./run.sh
 ```
 
