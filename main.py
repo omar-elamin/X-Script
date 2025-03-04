@@ -228,7 +228,7 @@ def login_x(target_date, desired_times, retry_interval):
                         # Wait for and verify the booking success message
                         try:
                             success_element = wait.until(
-                                EC.visibility_of_element_located((By.XPATH, "//div[@data-test-id='booking-success']"))
+                                EC.visibility_of_element_located((By.XPATH, "//i[@data-test-id='booking-success']"))
                             )
                             success_text = success_element.text
                             if "Booking was made" in success_text:
