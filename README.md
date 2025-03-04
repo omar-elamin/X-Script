@@ -19,6 +19,7 @@ An automated booking system for TU Delft X fitness slots with both a web-based R
 - Chrome browser installed
 - TU Delft account credentials
 - Node.js and npm (for React web app only)
+- Conda environment (recommended for managing dependencies)
 
 ## Installation
 
@@ -29,24 +30,54 @@ git clone <repository-url>
 cd fitness-booking
 ```
 
-2. Install Python dependencies:
+2. Create and activate a conda environment (recommended):
+```bash
+conda create -n xscript python=3.8
+conda activate xscript
+```
+
+3. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Create a `.env` file in the root directory with your TU Delft credentials:
+4. Create a `.env` file in the root directory with your TU Delft credentials:
 ```
 TU_USERNAME=your_username
 TU_PASSWORD=your_password
 ```
 
-4. For the React web app, install JavaScript dependencies:
+5. For the React web app, install JavaScript dependencies:
 ```bash
 cd x-script-web
 npm install
 ```
 
 ## Usage
+
+### Quick Start with Run Scripts
+
+We provide convenient run scripts that automatically activate the conda environment and start the application:
+
+#### For Windows:
+```
+.\run.bat
+```
+
+#### For Unix-based systems (Linux/macOS):
+```
+./run.sh
+```
+
+By default, these scripts activate the "xscript" conda environment. If you used a different name for your environment, you can specify it as a parameter:
+
+```
+.\run.bat your-env-name
+```
+or
+```
+./run.sh your-env-name
+```
 
 ### Option 1: Python Tkinter GUI
 
@@ -69,6 +100,14 @@ python main.py
 ```bash
 cd x-script-web
 npm run dev
+```
+   Or use the run scripts to activate the conda environment and start the application:
+```bash
+# Windows
+.\run.bat
+
+# Unix-based systems
+./run.sh
 ```
 
 2. Open your browser and navigate to `http://localhost:3000`
